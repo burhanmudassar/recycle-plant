@@ -1,4 +1,5 @@
 import os
+import torch
 from torch.utils.data import Dataset
 import numpy as np
 import cv2
@@ -17,17 +18,17 @@ testTransform = transforms.Compose([
 
 augmentTransform = transforms.Compose([
         transforms.ToPILImage(),
-        # transforms.RandomCrop((300,300)),
         transforms.RandomAffine(degrees=5, shear=10),
-        transforms.RandomRotation(degrees=5),
+        transforms.RandomRotation(degrees=[90,270]),
         transforms.RandomVerticalFlip(),
         transforms.RandomHorizontalFlip(),
         transforms.RandomPerspective(),
+        # transforms.RandomCrop((300,300)),
 ])
 
 trainTransform = transforms.Compose([
         *augmentTransform.transforms,
-        *testTransform.transforms
+        *testTransform.transforms[1:] # Exclude PIL image conversion
         # transforms.Resize((224, 224)),
         # transforms.ToTensor(),
         # transforms.Normalize(mean=(104, 117, 123), std=(57.4, 57.1, 58.4)),
@@ -71,7 +72,7 @@ class TrashData(Dataset):
         path = self.ids[index]
         target = self.targets[index]
 
-        im = cv2.imread(path)
+        im = cv2.imread(path)[:,:,::-1]
         if im is None:
             print("Invalid path")
             raise ValueError
@@ -79,7 +80,10 @@ class TrashData(Dataset):
         if self.transform:
             im = self.transform(im)
 
-        return im, target
+        if isinstance(im, torch.Tensor):
+            return im, target
+        else:
+            return np.asarray(im), target
 
 
 

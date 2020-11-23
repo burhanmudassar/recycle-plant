@@ -1,4 +1,6 @@
 import os
+
+from torch.nn.modules.dropout import Dropout
 from data.createDataset import TrashData
 from data.createDataset import trainTransform
 from data.createDataset import testTransform
@@ -26,9 +28,24 @@ class Solver(pl.LightningModule):
             for params in self.model.features.parameters(recurse=True):
                 params.requires_grad = False
             output_features_nb = 1280
-            self.model.classifier = nn.Linear(output_features_nb, num_classes, bias=True)
-            torch.nn.init.xavier_normal_(self.model.classifier.weight, gain=1.0)
-            torch.nn.init.zeros_(self.model.classifier.bias)
+            fc_layer = nn.Linear(output_features_nb, num_classes, bias=True)
+            self.model.classifier = nn.Sequential(
+                                           nn.Dropout(0.2),
+                                            fc_layer
+                                        )
+            torch.nn.init.xavier_normal_(fc_layer.weight, gain=1.0)
+            torch.nn.init.zeros_(fc_layer.bias)
+
+            # self.model = resnet34(pretrained=True)
+            # for params in self.model.parameters(recurse=True):
+            #     params.requires_grad = False
+            # output_features_nb = self.model.fc.weight.size(1)
+            # self.model.fc = nn.Linear(output_features_nb, num_classes, bias=True)
+            # for params in self.model.fc.parameters(recurse=True):
+            #     params.requires_grad = True
+            # torch.nn.init.xavier_normal_(self.model.fc.weight, gain=1.0)
+            # torch.nn.init.zeros_(self.model.fc.bias)
+
         # From scratch model
         else:
             features = MobileNetV2(num_classes=num_classes)
